@@ -1,0 +1,20 @@
+# Build artifacts
+*.o  # Object files
+*.a  # Static libraries
+*.so # Shared libraries
+*.exe # Executables
+*.dll # Dynamic libraries
+build/ 
+bin/
+
+.vscode/ 
+.idea/
+*.suo 
+*.sln 
+*.vcxproj
+*.vcxproj.filters
+
+*.log
+*.tmp
+
+test-results/

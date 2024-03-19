@@ -5,9 +5,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-struct termios origTermios;
+// terminal, low level
 
-constexpr int CTRL_KEY(char k) { return k & 0x1f; }
+struct termios origTermios;
 
 void die(const char *s) {
   perror(s);
@@ -36,21 +36,43 @@ void enableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
+char editorReadKey() {
+  int nread;
+  char c;
+  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+    if (nread == -1 && errno != EAGAIN) die("read");
+  }
+  return c;
+}
+
+// output
+
+/**
+ * Clears the terminal screen.
+ */
+void editorRefreshScreen() {
+  write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
+// input handling, higher level
+
+[[nodiscard]] constexpr int extractCtrlKey(char k) { return k & 0x1f; }
+
+void editorProcessKeypress() {
+  char c = editorReadKey();
+
+  switch (c) {  
+    case extractCtrlKey('q'): exit(0); break;
+
+  }
+}
+
 int main() {
   enableRawMode();
-
   while (true) {
-    char c = '\0';
-    int nread = read(STDIN_FILENO, &c, 1);
-
-    if (nread == -1 && errno != EAGAIN) die("read");
-
-    if (nread == 0) continue;
-
-    iscntrl(c) ? printf("%d\r\n", c) : printf("%d ('%c')\r\n", c, c);
-    if (c == CTRL_KEY('q')) break;
+    editorRefreshScreen();
+    editorProcessKeypress();
   }
   disableRawMode();
-
   return 0;
 }

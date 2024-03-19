@@ -7,6 +7,8 @@
 
 struct termios origTermios;
 
+constexpr int CTRL_KEY(char k) { return k & 0x1f; }
+
 void die(const char *s) {
   perror(s);
   exit(1);
@@ -46,7 +48,7 @@ int main() {
     if (nread == 0) continue;
 
     iscntrl(c) ? printf("%d\r\n", c) : printf("%d ('%c')\r\n", c, c);
-    if (c == 'q') break;
+    if (c == CTRL_KEY('q')) break;
   }
   disableRawMode();
 

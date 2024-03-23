@@ -2,9 +2,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
+#include <string>
+
+const char* GOL_VERSION =  "0.0.0.0.1";
 
 void clearScreenAndCursor() {
   write(STDOUT_FILENO, "\x1b[2J", 4); // clear screen
@@ -45,9 +49,6 @@ void enableRawMode() {
   raw.c_cflag |= (CS8);
   raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
-  // c_cc == control characters, array of bytes that control various terminal
-  // settings VMIN == min number of bytes of input needed before read() can
-  // return VTIME == max amount of time to wait before read() returns
   raw.c_cc[VMIN] = 0;
   raw.c_cc[VTIME] = 1;
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
@@ -94,24 +95,72 @@ int getWindowSize(int *row, int *col) {
   }
 
 }
+
+/*** append buffer ***/
+struct abuf {
+  char *b;
+  int len;
+};
+
+#define ABUF_INIT {NULL, 0}
+
+void abAppend(struct abuf *ab, const char *s, int len) {
+  char *anew = (char *)realloc(ab->b, ab->len + len);
+
+  if (anew == NULL) return;
+  memcpy(&anew[ab->len], s, len);
+  ab->b = anew;
+  ab->len += len;
+}
+
+void abFree(struct abuf *ab) {
+  free(ab->b);
+}
+
 /*** output ***/ 
 
-void editorDrawRows() {
+void editorDrawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < E.screenrows; y++) {
-    write(STDOUT_FILENO, "~", 1);
+    if (y == E.screenrows / 3) {
+      std::string welcome = "GOL -- version ";
+      welcome += GOL_VERSION;
+      if (welcome.size() > E.screencols) welcome = welcome.substr(0, E.screencols);
 
+      int padding = (E.screencols - welcome.size()) / 2;
+
+      if (padding) {
+        abAppend(ab, "~", 1);
+        padding--;
+      }
+
+      while (padding--) abAppend(ab, " ", 1);
+      abAppend(ab, welcome.c_str(), welcome.size());
+    } else {
+      abAppend(ab, "~", 1);
+    }
+
+    abAppend(ab, "\x1b[K", 3); // clear line
     if (y < E.screenrows - 1) {
-      write(STDOUT_FILENO, "\r\n", 2);
+      abAppend(ab, "\r\n", 2);
     }
   }
 }
 
 void editorRefreshScreen() {
-  clearScreenAndCursor();
+  struct abuf ab = ABUF_INIT;
 
-  editorDrawRows();
-  write(STDOUT_FILENO, "\x1b[H", 3);
+  abAppend(&ab, "\x1b[?25l", 6); // hide cursor
+  //abAppend(&ab, "\x1b[2J", 4); // clear screen 
+  abAppend(&ab, "\x1b[H", 3); // move cursor to top left
+
+  editorDrawRows(&ab);
+
+  abAppend(&ab, "\x1b[H", 3); // move cursor to top left
+  abAppend(&ab, "\x1b[?25h", 6); // show cursor
+
+  write(STDOUT_FILENO, ab.b, ab.len);
+  abFree(&ab);
 }
 
 

@@ -19,6 +19,8 @@ void clearScreenAndCursor() {
 /*** data***/
 
 struct editorConfig {
+  int cx, cy; 
+
   int screenrows;
   int screencols;
   struct termios origTermios;
@@ -30,7 +32,6 @@ struct editorConfig E;
 
 void die(const char *s) {
   clearScreenAndCursor();
-
   perror(s);
   exit(1);
 }
@@ -63,6 +64,16 @@ char editorReadKey() {
   return c;
 }
 
+/**
+ * @brief Retrieves the current cursor position in the terminal.
+ * 
+ * This function sends an escape sequence to the terminal to request the cursor position.
+ * It then reads the response from the terminal and extracts the row and column values.
+ * 
+ * @param row Pointer to an integer variable to store the row position.
+ * @param col Pointer to an integer variable to store the column position.
+ * @return 0 if successful, -1 otherwise.
+ */
 int getCursorPosition(int *row, int *col) {
   char buf[32];
   unsigned int i = 0;
@@ -82,6 +93,17 @@ int getCursorPosition(int *row, int *col) {
   return 0;
 }
 
+/**
+ * @brief Gets the size of the terminal window.
+ * 
+ * This function retrieves the number of rows and columns in the terminal window.
+ * It uses the TIOCGWINSZ ioctl call to get the window size.
+ * If the ioctl call fails or the window size is 0, it falls back to using the getCursorPosition function.
+ * 
+ * @param row Pointer to store the number of rows in the terminal window.
+ * @param col Pointer to store the number of columns in the terminal window.
+ * @return 0 if successful, -1 if an error occurred.
+ */
 int getWindowSize(int *row, int *col) {
   struct winsize ws;
 
@@ -156,7 +178,12 @@ void editorRefreshScreen() {
 
   editorDrawRows(&ab);
 
-  abAppend(&ab, "\x1b[H", 3); // move cursor to top left
+  char buf[32];
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+  abAppend(&ab, buf, strlen(buf));
+
+
+  // abAppend(&ab, "\x1b[H", 3); // move cursor to top left
   abAppend(&ab, "\x1b[?25h", 6); // show cursor
 
   write(STDOUT_FILENO, ab.b, ab.len);
@@ -165,6 +192,23 @@ void editorRefreshScreen() {
 
 
 /*** input handling, higher level ***/ 
+
+void editorMoveCursor(char key) {
+  switch (key) {
+    case 'w':
+      E.cy--;
+      break;
+    case 's':
+      E.cy++;
+      break;
+    case 'a':
+      E.cx--;
+      break;
+    case 'd':
+      E.cx++;
+      break;
+  }
+}
 
 [[nodiscard]] constexpr int extractCtrlKey(char k) { return k & 0x1f; }
 
@@ -176,7 +220,12 @@ void editorProcessKeypress() {
       clearScreenAndCursor();
       exit(0); 
       break;
-
+    case 'w':
+    case 's':
+    case 'a':
+    case 'd':
+      editorMoveCursor(c);
+      break;
   }
 }
 
@@ -184,6 +233,7 @@ void editorProcessKeypress() {
 /*** init ***/
 
 void initEditor() {
+  E.cx = E.cy = 0;
   if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
 }
 

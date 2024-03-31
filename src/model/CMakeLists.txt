@@ -1,6 +1,5 @@
 set(MODEL_SOURCES
-  grid.cpp
-  rules.cpp
+  TerminalModel.cpp
 )
 
 add_library(model ${MODEL_SOURCES})

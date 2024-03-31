@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <string>
 
+#include "model/TerminalModel.h"
+#include "view/TerminalView.h"
+#include "controller/TerminalController.h"
+
 const char* GOL_VERSION =  "0.0.0.0.1";
 
 void clearScreenAndCursor() {
@@ -16,7 +20,7 @@ void clearScreenAndCursor() {
 }
 
 
-/*** data***/
+/*** data ***/
 
 struct editorConfig {
   int cx, cy; 
@@ -238,7 +242,9 @@ void initEditor() {
 }
 
 
-int main() {
+/*** main ***/
+
+void cloop() {
   enableRawMode();
   initEditor();
   while (true) {
@@ -246,5 +252,19 @@ int main() {
     editorProcessKeypress();
   }
   disableRawMode();
+}
+
+void cpploop() {
+  TerminalModel model;
+  TerminalView view;
+  TerminalController controller(&view, &model);
+
+  controller.runEditor();
+}
+
+int main() {
+  // cloop();
+  cpploop();
+
   return 0;
 }

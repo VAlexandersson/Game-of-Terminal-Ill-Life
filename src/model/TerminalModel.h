@@ -2,50 +2,35 @@
 #include <termios.h>
 #include <iostream>
 
-
 class TerminalModel {
-
 public:
   TerminalModel();
   ~TerminalModel();
-  
-  int getScreenRows() { return screenrows; }
-  int getScreenCols() { return screencols; }
-
+  size_t getScreenRows() { return screenrows; }
+  size_t getScreenCols() { return screencols; }
+  size_t getCx() { return cx; }
+  size_t getCy() { return cy; }
   void editorMoveCursor(char key);
-
 private:
+  size_t screenrows, screencols;
+  size_t cx, cy;
   termios origTermios;
-  std::string buffer;
-  int cx, cy;
-  int screenrows, screencols;
-
   void enableRawMode();
   void disableRawMode();
   int getWindowSize();
-
-  void AppendBuffer(const std::string& string) {
-    buffer.append(string);
-  }
 };
 
-TerminalModel::TerminalModel() {
+TerminalModel::TerminalModel() : cx(0), cy(0) {
   enableRawMode();
   if(getWindowSize() == -1) {
     std::cout << "getWindowSize failed\r\n";
   }
-  std::cout << "screenrows: " << screenrows << "\r\n";
-  std::cout << "screencols: " << screencols << "\r\n";
-
-  cx = cy = 0;
-
-  std::cout << "TerminalModel created\r\n";
-
 }
 
 TerminalModel::~TerminalModel() {
   disableRawMode();
-
+  std::cout << "cx: " << cx << " cy: " << cy << "\r\n";
+  std::cout << "screenrows: " << screenrows << " screencols: " << screencols << "\r\n";
   std::cout << "TerminalModel destroyed\r\n";
 }
 
@@ -79,6 +64,7 @@ int TerminalModel::getWindowSize() {
     return 0;
   }
 }
+
 
 
 void TerminalModel::editorMoveCursor(char key) {

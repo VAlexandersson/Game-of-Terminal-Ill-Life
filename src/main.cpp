@@ -256,7 +256,7 @@ void cloop() {
 
 void cpploop() {
   TerminalModel model;
-  TerminalView view;
+  TerminalView view(&model);
   TerminalController controller(&view, &model);
 
   controller.runEditor();

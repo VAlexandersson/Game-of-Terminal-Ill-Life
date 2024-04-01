@@ -1,6 +1,8 @@
 #pragma once
 #include <termios.h>
 #include <iostream>
+#include <unistd.h>
+#include <sys/ioctl.h>
 
 class TerminalModel {
 public:
@@ -12,8 +14,7 @@ public:
   size_t getCy() { return cy; }
   void editorMoveCursor(char key);
 private:
-  size_t screenrows, screencols;
-  size_t cx, cy;
+  size_t screenrows, screencols, cx, cy;
   termios origTermios;
   void enableRawMode();
   void disableRawMode();

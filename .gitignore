@@ -9,6 +9,7 @@ bin/
 
 .vscode/ 
 .idea/
+.cache/
 *.suo 
 *.sln 
 *.vcxproj

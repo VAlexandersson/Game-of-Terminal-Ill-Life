@@ -1,6 +1,7 @@
 #pragma once
 #include <termios.h>
 #include <iostream>
+#include "../model/TerminalModel.h"
 
 class TerminalView {
 public:
@@ -41,13 +42,13 @@ void TerminalView::refreshScreen() {
 }
 
 void TerminalView::DrawRows() {
-  for (int y = 0; y < model->getScreenRows(); y++) {
+  for (size_t y = 0; y < model->getScreenRows(); y++) {
     if (y == model->getScreenRows() / 3) {
       std::string welcome = "GOL -- version 0.0.1";
       if (welcome.size() > model->getScreenCols()) {
         welcome = welcome.substr(0, model->getScreenCols());
       }
-      int padding = (model->getScreenCols() - welcome.size()) / 2;
+      size_t padding = (model->getScreenCols() - welcome.size()) / 2;
       if (padding) {
         buffer.append("~");
         padding--;
